@@ -30,7 +30,7 @@ while True:
             scores = detection[5:]
             class_id = np.argmax(scores)
             confidence = scores[class_id]
-            if class_id == 0 and confidence > 0.5:
+            if class_id == 0 and confidence > 0.4:
                 center_x = int(detection[0] * frame.shape[1])
                 center_y = int(detection[1] * frame.shape[0])
                 w = int(detection[2] * frame.shape[1])
@@ -44,13 +44,18 @@ while True:
     indices = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
     font = cv2.FONT_HERSHEY_SIMPLEX
     colors = np.random.uniform(0, 255, size=(len(boxes), 3))
+    count = 0
     if len(indices) != 0:
         for i in indices.ravel():
             x, y, w, h = boxes[i]
             label = f"Person {confidences[i]:.2f}"
             color = colors[i]
-            cv2.rectangle(frame, (x, y), (x+w, y+h), color, 2)
-            cv2.putText(frame, label, (x, y-10), font, 0.5, color, 2)
+            if confidences[i] > 0.4:
+                count += 1
+                cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+                cv2.putText(frame, label, (x, y - 10), font, 0.5, color, 2)
+
+    cv2.putText(frame, f"Number of people: {count}", (10, 30), font, 0.8, (0, 0, 255), 2)
 
     # hiển thị frame với nhãn nhận diện
     cv2.imshow("Detection", frame)

@@ -30,7 +30,7 @@ for output in layer_outputs:
         scores = detection[5:]
         class_id = np.argmax(scores)
         confidence = scores[class_id]
-        if class_id == 0 and confidence > 0.5:
+        if class_id == 0 and confidence > 0.4:
             center_x = int(detection[0] * img.shape[1])
             center_y = int(detection[1] * img.shape[0])
             w = int(detection[2] * img.shape[1])
@@ -44,13 +44,18 @@ for output in layer_outputs:
 indices = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
 font = cv2.FONT_HERSHEY_SIMPLEX
 colors = np.random.uniform(0, 255, size=(len(boxes), 3))
-for i in indices.ravel():
-    x, y, w, h = boxes[i]
-    label = f"Person {confidences[i]:.2f}"
-    color = colors[i]
-    cv2.rectangle(img, (x, y), (x+w, y+h), color, 2)
-    cv2.putText(img, label, (x, y-10), font, 0.5, color, 2)
+count=0
+if len(indices) != 0:
+    for i in indices.ravel():
+        x, y, w, h = boxes[i]
+        label = f"Person {confidences[i]:.2f}"
+        color = colors[i]
+        if confidences[i] > 0.4:
+            count += 1
+            cv2.rectangle(img, (x, y), (x + w, y + h), color, 2)
+            cv2.putText(img, label, (x, y - 10), font, 0.5, color, 2)
 
+cv2.putText(img, f"Number of people: {count}", (10, 30), font, 0.8, (0, 0, 255), 2)
 # ghi hình ảnh nhận diện ra file đầu ra
 cv2.imwrite(output_image_path, img)
 
