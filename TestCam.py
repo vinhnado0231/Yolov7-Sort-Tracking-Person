@@ -12,6 +12,7 @@ net = cv2.dnn.readNetFromDarknet(model_config, model_weights)
 layer_names = net.getLayerNames()
 output_layer = [layer_names[i-1] for i in net.getUnconnectedOutLayers()]
 
+thres = 0.5
 # mở camera
 cap = cv2.VideoCapture(0)
 
@@ -30,7 +31,7 @@ while True:
             scores = detection[5:]
             class_id = np.argmax(scores)
             confidence = scores[class_id]
-            if class_id == 0 and confidence > 0.4:
+            if class_id == 0 and confidence > thres:
                 center_x = int(detection[0] * frame.shape[1])
                 center_y = int(detection[1] * frame.shape[0])
                 w = int(detection[2] * frame.shape[1])
@@ -50,7 +51,7 @@ while True:
             x, y, w, h = boxes[i]
             label = f"Person {confidences[i]:.2f}"
             color = colors[i]
-            if confidences[i] > 0.4:
+            if confidences[i] > thres:
                 count += 1
                 cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
                 cv2.putText(frame, label, (x, y - 10), font, 0.5, color, 2)
