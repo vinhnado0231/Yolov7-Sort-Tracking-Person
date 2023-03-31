@@ -1,5 +1,0 @@
-classes= 1
-train  = /content/Dataset2/yolotinyv4_human-detect_demo/train.txt
-valid  = /content/Dataset2/yolotinyv4_human-detect_demo/valid.txt
-names = obj.names
-backup = backup/
