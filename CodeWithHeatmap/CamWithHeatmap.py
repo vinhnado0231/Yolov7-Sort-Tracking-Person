@@ -114,6 +114,7 @@ while True:
     cv2.putText(frame, f"Number of people: {len(indices)}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
 
+
     from skimage.transform import resize
 
     temp_heat_matrix = heat_matrix.copy()
