@@ -1,9 +1,10 @@
 import cv2
 import numpy as np
-from imutils.video import VideoStream
+from skimage.transform import resize
 
 # Parameters
 video_file = "input.mp4"
+output_video_path = "output.avi"
 classnames_file = "classnames.txt"
 weights_file = "yolov4-tiny.weights"
 config_file = "yolov4-tiny.cfg"
@@ -71,11 +72,10 @@ def draw_prediction(img, class_id, x, y, x_plus_w, y_plus_h):
     cv2.rectangle(img, (x, y), (x_plus_w, y_plus_h), color, 2)
     cv2.putText(img, label, (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-
-video = VideoStream(video_file).start()
+video=cv2.VideoCapture(video_file)
 
 while True:
-    frame = video.read()
+    ret,frame = video.read()
     if frame is None:
         break
     # Nhan dien vat the trong khung hinh
@@ -110,7 +110,6 @@ while True:
         h = box[3]
         draw_prediction(frame, 0, round(x), round(y), round(x + w), round(y + h))
 
-    from skimage.transform import resize
 
     temp_heat_matrix = heat_matrix.copy()
     temp_heat_matrix = resize(temp_heat_matrix, (frame_height, frame_width))
@@ -125,7 +124,7 @@ while True:
     cv2.addWeighted(image_heat, alpha, frame, 1 - alpha, 0, frame)
     cv2.putText(frame, f"Number of people: {len(indices)}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
     cv2.imshow("Video", frame)
-    # cv2.imshow("Heatmap", image_heat)
+    #cv2.imshow("Heatmap", image_heat)
     if cv2.waitKey(1) == ord('q'):
         break
 
