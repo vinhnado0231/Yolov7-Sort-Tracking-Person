@@ -3,13 +3,15 @@ import numpy as np
 from imutils.video import VideoStream
 
 # Parameters
-video_file = "input.avi"
+video_file = "input.mp4"
 classnames_file = "classnames.txt"
 weights_file = "yolov4-tiny.weights"
 config_file = "yolov4-tiny.cfg"
 conf_threshold = 0.5
 nms_threshold = 0.4
 detect_class = "person"
+
+
 
 frame_width = 1920
 frame_height = 1080
@@ -121,7 +123,7 @@ while True:
     frame = draw_grid(frame)
     # Chong hinh
     cv2.addWeighted(image_heat, alpha, frame, 1 - alpha, 0, frame)
-
+    cv2.putText(frame, f"Number of people: {len(indices)}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
     cv2.imshow("Video", frame)
     # cv2.imshow("Heatmap", image_heat)
     if cv2.waitKey(1) == ord('q'):
