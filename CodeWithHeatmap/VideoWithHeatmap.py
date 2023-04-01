@@ -4,7 +4,6 @@ from skimage.transform import resize
 
 # Parameters
 video_file = "input.mp4"
-output_video_path = "output.avi"
 classnames_file = "classnames.txt"
 weights_file = "yolov4-tiny.weights"
 config_file = "yolov4-tiny.cfg"
