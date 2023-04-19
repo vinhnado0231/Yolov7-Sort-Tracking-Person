@@ -73,11 +73,13 @@ def draw_prediction(img, class_id, x, y, x_plus_w, y_plus_h):
     cv2.rectangle(img, (x, y), (x_plus_w, y_plus_h), color, 2)
     cv2.putText(img, label, (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-
+frame_count = 0
 while True:
+    frame_count +=1
+    if frame_count %2 == 0:
+        continue
     # đọc frame từ camera
     ret,frame = cap.read()
-
     # thực hiện xử lý đối tượng và trả về bounding box và độ tin cậy
     blob = cv2.dnn.blobFromImage(frame, 1/255.0, (416, 416), swapRB=True, crop=False)
     yolo_net.setInput(blob)
@@ -101,7 +103,6 @@ while True:
 
     # vẽ bounding box và ghi nhãn con người nhận diện được
     indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
-
     # Ve cac khung chu nhat quanh doi tuong
     for i in indices:
         box = boxes[i]
