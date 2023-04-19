@@ -42,7 +42,7 @@ with open(classnames_file, 'r') as f:
 COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
 
 frame = 0
-frame1 = 0
+image_heat = 0
 box1 = []
 # Ham tra ve dong va cot tu toa do x, y
 def get_row_col(x, y):
@@ -99,12 +99,12 @@ def save_detections(indices, boxes):
 
 def get_record():
     global frame
-    global frame1
     global box1
     while True:
         ret, frame = cap.read()
 def calc():
     global frame
+    global image_heat
     cv2.waitKey(1000)
     while True:
         frame1 = frame
@@ -158,13 +158,13 @@ def calc():
         # Tao heat map
         image_heat = cv2.applyColorMap(temp_heat_matrix, cv2.COLORMAP_JET)
 
-        frame1 = draw_grid(frame1)
+        image_heat = draw_grid(image_heat)
 
         # Chong hinh
-        cv2.addWeighted(image_heat, alpha, frame1, 1 - alpha, 0, frame1)
+        # cv2.addWeighted(image_heat, alpha, frame1, 1 - alpha, 0, frame1)
 
 
-        cv2.imshow("Detection", frame1)
+        cv2.imshow("Detection", image_heat)
         # thoát nếu nhấn phím 'q'
         if cv2.waitKey(1) == ord('q'):
             break
@@ -183,13 +183,13 @@ t1.start()
 
 async def video_feed(websocket):
     global frame
-    global frame1
+    global image_heat
     global box1
     while cap.isOpened():
         # Encode the frames as JPEG images and add them to the dictionary
         frame_dict = {
             "frame1": base64.b64encode(cv2.imencode('.jpg', frame)[1]).decode('utf-8'),
-            "frame2": base64.b64encode(cv2.imencode('.jpg', frame1)[1]).decode('utf-8')
+            "frame2": base64.b64encode(cv2.imencode('.jpg', image_heat)[1]).decode('utf-8')
         }
 
         box1_np = np.array(box1)
