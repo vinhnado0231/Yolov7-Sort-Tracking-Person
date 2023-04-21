@@ -21,13 +21,13 @@ cap = cv2.VideoCapture(0)
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-cell_size = 65  # 40x40 pixel
+cell_size = 40
 n_cols = frame_width // cell_size
 n_rows = frame_height // cell_size
 alpha = 0.4
 
 heat_matrix = np.zeros((n_rows, n_cols))
-# scale = 0.00392  # Chua tim ra nguon goc
+
 
 yolo_net = cv2.dnn.readNet(weights_file, config_file)
 
@@ -43,7 +43,7 @@ COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
 
 frame = 0
 image_heat = 0
-box1 = []
+num_people = 0
 # Ham tra ve dong va cot tu toa do x, y
 def get_row_col(x, y):
     row = y // cell_size
@@ -70,41 +70,35 @@ def draw_grid(image):
 
 
 # Ham ve cac hinh chu nhat va ten class
-def draw_prediction(x, y, x_plus_w, y_plus_h):
+def draw_prediction(img, class_id, x, y, x_plus_w, y_plus_h):
     global heat_matrix
     r, c = get_row_col((x_plus_w + x) // 2, (y_plus_h + y) // 2)
     heat_matrix[r, c] += 1
 
+    label = str(classes[class_id])
+    color = COLORS[class_id]
+    cv2.rectangle(img, (x, y), (x_plus_w, y_plus_h), color, 2)
+    cv2.putText(img, label, (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-def save_detections(indices, boxes):
-    detections = []
+def save_detections(num_people):
     current_time = datetime.datetime.now()
-    current_time_str = current_time.strftime("%Y-%m-%d %H:%M:%S")
-    for i in indices:
-        box = boxes[i]
-        x = box[0]
-        y = box[1]
-        w = box[2]
-        h = box[3]
-        detection = {'time': current_time_str, 'box': [x, y, w, h]}
-        detections.append(detection)
+    current_time_str = current_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
 
     # Ghi các giá trị của các khung và thời gian vào file
     with open('detections.txt', 'a') as f:
-        for detection in detections:
-            time_str = "Time: " + detection["time"]
-            box_str = f'Box: {detection["box"]}'
-            f.write(f'{time_str}, {box_str}\n')
+        time_str = "Time: " + current_time_str
+        num_str = f'Num people: {num_people}'
+        f.write(f'{time_str}, {num_str}\n')
 
 
 def get_record():
     global frame
-    global box1
     while True:
         ret, frame = cap.read()
-def calc():
+def calculation():
     global frame
     global image_heat
+    global num_people
     cv2.waitKey(1000)
     while True:
         frame1 = frame
@@ -131,7 +125,7 @@ def calc():
 
         # vẽ bounding box và ghi nhãn con người nhận diện được
         indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
-
+        num_people = len(indices)
         # Ve cac khung chu nhat quanh doi tuong
         for i in indices:
             box = boxes[i]
@@ -139,14 +133,13 @@ def calc():
             y = box[1]
             w = box[2]
             h = box[3]
-            box1.append([x, y, w, h])
-            draw_prediction(round(x), round(y), round(x + w), round(y + h))
+            draw_prediction(frame1, 0, round(x), round(y), round(x + w), round(y + h))
 
         # Tạo một đối tượng Thread để thực hiện hàm save_detections() trong một thread riêng biệt
-        detections_thread = threading.Thread(target=save_detections, args = (indices,boxes))
+        detections_thread = threading.Thread(target=save_detections, args = (num_people,))
         detections_thread.start()
 
-        cv2.putText(frame1, f"Number of people: {len(indices)}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        cv2.putText(frame1, f"Number of people: {num_people}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
         from skimage.transform import resize
 
@@ -158,13 +151,13 @@ def calc():
         # Tao heat map
         image_heat = cv2.applyColorMap(temp_heat_matrix, cv2.COLORMAP_JET)
 
-        image_heat = draw_grid(image_heat)
+        frame1 = draw_grid(frame1)
 
         # Chong hinh
-        # cv2.addWeighted(image_heat, alpha, frame1, 1 - alpha, 0, frame1)
+        cv2.addWeighted(image_heat, alpha, frame1, 1 - alpha, 0, frame1)
 
 
-        cv2.imshow("Detection", image_heat)
+        cv2.imshow("Detection", frame1)
         # thoát nếu nhấn phím 'q'
         if cv2.waitKey(1) == ord('q'):
             break
@@ -175,16 +168,16 @@ def calc():
     # đóng tất cả cửa sổ hiển thị
     cv2.destroyAllWindows()
 
-t2 = threading.Thread(target= get_record)
-t2.start()
-
-t1 = threading.Thread(target=calc)
+t1 = threading.Thread(target= get_record)
 t1.start()
+
+t2 = threading.Thread(target=calculation)
+t2.start()
 
 async def video_feed(websocket):
     global frame
     global image_heat
-    global box1
+    global num_people
     while cap.isOpened():
         # Encode the frames as JPEG images and add them to the dictionary
         frame_dict = {
@@ -192,11 +185,11 @@ async def video_feed(websocket):
             "frame2": base64.b64encode(cv2.imencode('.jpg', image_heat)[1]).decode('utf-8')
         }
 
-        box1_np = np.array(box1)
-        matrix_dict = {"matrix": base64.b64encode(box1_np.tobytes()).decode('utf-8')}
+
+        num_dict = {"Number of peole": num_people}
 
         # Combine the two dictionaries
-        data_dict = {**frame_dict, **matrix_dict}
+        data_dict = {**frame_dict, **num_dict}
 
         # Send the dictionary to the client
         await websocket.send(json.dumps(data_dict))
