@@ -31,7 +31,8 @@ heat_matrix = np.zeros((n_rows, n_cols))
 yolo_net = cv2.dnn.readNet(weights_file, config_file)
 
 layer_names = yolo_net.getLayerNames()
-output_layers = [layer_names[i - 1] for i in yolo_net.getUnconnectedOutLayers()]
+output_layers = [layer_names[i - 1]
+                 for i in yolo_net.getUnconnectedOutLayers()]
 
 # Doc ten cac class
 classes = None
@@ -61,22 +62,27 @@ def create_grid(frame_width, frame_height, cell_size=40):
         grid = cv2.line(grid, start_point, end_point, color, thickness)
     return grid
 
+
 def draw_grid_on_image(image, grid):
     image = cv2.addWeighted(image, 1, grid, 0.5, 0)
     return image
 
+
 def draw_prediction(img, class_id, x, y, x_plus_w, y_plus_h):
     global heat_matrix
-    heat_matrix[(y_plus_h + y) // 2 // cell_size, (x_plus_w + x) // 2 // cell_size] += 1
+    heat_matrix[(y_plus_h + y) // 2 // cell_size,
+                (x_plus_w + x) // 2 // cell_size] += 1
 
     label = str(classes[class_id])
     color = COLORS[class_id]
     cv2.rectangle(img, (x, y), (x_plus_w, y_plus_h), color, 2)
-    cv2.putText(img, label, (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+    cv2.putText(img, label, (x - 10, y - 10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
 
 def save_detections(num_people):
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
+    current_time = datetime.datetime.now().strftime(
+        "%Y-%m-%d %H:%M:%S.%f")[:-4]
 
     # Ghi các giá trị của các khung và thời gian vào file
     with open('detections.txt', 'a') as f:
@@ -98,7 +104,8 @@ def calculation():
     while True:
         frame1 = frame
         # thực hiện xử lý đối tượng và trả về bounding box và độ tin cậy
-        blob = cv2.dnn.blobFromImage(frame1, 1 / 255.0, (416, 416), swapRB=True, crop=False)
+        blob = cv2.dnn.blobFromImage(
+            frame1, 1 / 255.0, (416, 416), swapRB=True, crop=False)
         yolo_net.setInput(blob)
         layer_outputs = yolo_net.forward(output_layers)
         boxes = []
@@ -119,7 +126,8 @@ def calculation():
                     confidences.append(float(confidence))
 
         # vẽ bounding box và ghi nhãn con người nhận diện được
-        indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
+        indices = cv2.dnn.NMSBoxes(
+            boxes, confidences, conf_threshold, nms_threshold)
         num_people = len(indices)
         # Ve cac khung chu nhat quanh doi tuong
         for i in indices:
@@ -128,18 +136,22 @@ def calculation():
             y = box[1]
             w = box[2]
             h = box[3]
-            draw_prediction(frame1, 0, round(x), round(y), round(x + w), round(y + h))
+            draw_prediction(frame1, 0, round(x), round(y),
+                            round(x + w), round(y + h))
 
         # Tạo một đối tượng Thread để thực hiện hàm save_detections() trong một thread riêng biệt
-        detections_thread = threading.Thread(target=save_detections, args=(num_people,))
+        detections_thread = threading.Thread(
+            target=save_detections, args=(num_people,))
         detections_thread.start()
 
-        cv2.putText(frame1, f"Number of people: {num_people}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        cv2.putText(frame1, f"Number of people: {num_people}", (
+            10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
         from skimage.transform import resize
 
         temp_heat_matrix = heat_matrix.copy()
-        temp_heat_matrix = resize(temp_heat_matrix, (frame_height, frame_width))
+        temp_heat_matrix = resize(
+            temp_heat_matrix, (frame_height, frame_width))
         temp_heat_matrix = temp_heat_matrix / np.max(temp_heat_matrix)
         temp_heat_matrix = np.uint8(temp_heat_matrix * 255)
 
