@@ -28,7 +28,6 @@ alpha = 0.4
 
 heat_matrix = np.zeros((n_rows, n_cols))
 
-
 yolo_net = cv2.dnn.readNet(weights_file, config_file)
 
 layer_names = yolo_net.getLayerNames()
@@ -44,62 +43,58 @@ COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
 frame = 0
 image_heat = 0
 num_people = 0
+
+
 # Ham tra ve dong va cot tu toa do x, y
-def get_row_col(x, y):
-    row = y // cell_size
-    col = x // cell_size
-    return row, col
 
-
-def draw_grid(image):
+def create_grid(frame_width, frame_height, cell_size=40):
+    grid = np.zeros((frame_height, frame_width, 3), dtype=np.uint8)
+    color = (255, 255, 255)
+    thickness = 1
     for i in range(n_rows):
         start_point = (0, (i + 1) * cell_size)
         end_point = (frame_width, (i + 1) * cell_size)
-        color = (255, 255, 255)
-        thickness = 1
-        image = cv2.line(image, start_point, end_point, color, thickness)
-
+        grid = cv2.line(grid, start_point, end_point, color, thickness)
     for i in range(n_cols):
         start_point = ((i + 1) * cell_size, 0)
         end_point = ((i + 1) * cell_size, frame_height)
-        color = (255, 255, 255)
-        thickness = 1
-        image = cv2.line(image, start_point, end_point, color, thickness)
+        grid = cv2.line(grid, start_point, end_point, color, thickness)
+    return grid
 
+def draw_grid_on_image(image, grid):
+    image = cv2.addWeighted(image, 1, grid, 0.5, 0)
     return image
 
-
-# Ham ve cac hinh chu nhat va ten class
 def draw_prediction(img, class_id, x, y, x_plus_w, y_plus_h):
     global heat_matrix
-    r, c = get_row_col((x_plus_w + x) // 2, (y_plus_h + y) // 2)
-    heat_matrix[r, c] += 1
+    heat_matrix[(y_plus_h + y) // 2 // cell_size, (x_plus_w + x) // 2 // cell_size] += 1
 
     label = str(classes[class_id])
     color = COLORS[class_id]
     cv2.rectangle(img, (x, y), (x_plus_w, y_plus_h), color, 2)
     cv2.putText(img, label, (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
+
 def save_detections(num_people):
-    current_time = datetime.datetime.now()
-    current_time_str = current_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
 
     # Ghi các giá trị của các khung và thời gian vào file
     with open('detections.txt', 'a') as f:
-        time_str = "Time: " + current_time_str
-        num_str = f'Num people: {num_people}'
-        f.write(f'{time_str}, {num_str}\n')
+        f.write(f'Time: {current_time}, Num people: {num_people}\n')
 
 
 def get_record():
     global frame
     while True:
         ret, frame = cap.read()
+
+
 def calculation():
     global frame
     global image_heat
     global num_people
     cv2.waitKey(1000)
+    grid = create_grid(frame_width, frame_height)
     while True:
         frame1 = frame
         # thực hiện xử lý đối tượng và trả về bounding box và độ tin cậy
@@ -136,7 +131,7 @@ def calculation():
             draw_prediction(frame1, 0, round(x), round(y), round(x + w), round(y + h))
 
         # Tạo một đối tượng Thread để thực hiện hàm save_detections() trong một thread riêng biệt
-        detections_thread = threading.Thread(target=save_detections, args = (num_people,))
+        detections_thread = threading.Thread(target=save_detections, args=(num_people,))
         detections_thread.start()
 
         cv2.putText(frame1, f"Number of people: {num_people}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
@@ -151,11 +146,10 @@ def calculation():
         # Tao heat map
         image_heat = cv2.applyColorMap(temp_heat_matrix, cv2.COLORMAP_JET)
 
-        frame1 = draw_grid(frame1)
+        frame1 = draw_grid_on_image(frame1, grid)
 
         # Chong hinh
         cv2.addWeighted(image_heat, alpha, frame1, 1 - alpha, 0, frame1)
-
 
         cv2.imshow("Detection", frame1)
         # thoát nếu nhấn phím 'q'
@@ -168,11 +162,13 @@ def calculation():
     # đóng tất cả cửa sổ hiển thị
     cv2.destroyAllWindows()
 
-t1 = threading.Thread(target= get_record)
+
+t1 = threading.Thread(target=get_record)
 t1.start()
 
 t2 = threading.Thread(target=calculation)
 t2.start()
+
 
 async def video_feed(websocket):
     global frame
@@ -184,7 +180,6 @@ async def video_feed(websocket):
             "frame1": base64.b64encode(cv2.imencode('.jpg', frame)[1]).decode('utf-8'),
             "frame2": base64.b64encode(cv2.imencode('.jpg', image_heat)[1]).decode('utf-8')
         }
-
 
         num_dict = {"Number of peole": num_people}
 
