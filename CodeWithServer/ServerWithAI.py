@@ -8,9 +8,9 @@ import websockets
 import threading
 
 # Parameters
-classnames_file = "classnames.txt"
-weights_file = "yolov4-tiny.weights"
-config_file = "yolov4-tiny.cfg"
+classnames_file = "D:\HK6\PBL5\BE\Yolov4-Tiny-Detect-Person\CodeWithServer\classnames.txt"
+weights_file = "D:\HK6\PBL5\BE\Yolov4-Tiny-Detect-Person\CodeWithServer\yolov4-tiny.weights"
+config_file = "D:\HK6\PBL5\BE\Yolov4-Tiny-Detect-Person\CodeWithServer\yolov4-tiny.cfg"
 conf_threshold = 0.5
 nms_threshold = 0.4
 detect_class = "person"
@@ -193,7 +193,8 @@ async def server(websocket):
                 content = f.read()
                 await websocket.send(content)
         else:
-            current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
+            current_time = datetime.datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S.%f")[:-4]
 
             time_dict = {"Time": current_time}
 
