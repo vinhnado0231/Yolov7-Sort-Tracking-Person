@@ -146,7 +146,7 @@ def calculation():
         # Tao heat map
         image_heat = cv2.applyColorMap(temp_heat_matrix, cv2.COLORMAP_JET)
 
-        frame1 = draw_grid_on_image(frame1, grid)
+        image_heat = draw_grid_on_image(image_heat, grid)
 
         # # Chong hinh
         # cv2.addWeighted(image_heat, alpha, frame1, 1 - alpha, 0, frame1)
@@ -194,7 +194,7 @@ async def server(websocket):
 
             data_dict = {**frame_dict, **num_dict, **time_dict}
 
-            # Gửi dictionary đến client
+            # Gửi dictionary đến clientD
             await websocket.send(json.dumps(data_dict))
 
     cap.release()
