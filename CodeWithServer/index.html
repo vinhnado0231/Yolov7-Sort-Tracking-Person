@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>WebSocket Video Feed</title>
+</head>
+<body>
+    <h1>WebSocket Video Feed</h1>
+    <div>
+        <h2>Original Video</h2>
+        <img id="frame1" src="#" alt="Original Video">
+    </div>
+    <div>
+        <h2>Heatmap</h2>
+        <img id="frame2" src="#" alt="Heatmap">
+    </div>
+    <script>
+        var ws = new WebSocket("ws://localhost:8765/");
+        ws.onmessage = function(event) {
+            var data = JSON.parse(event.data);
+            document.getElementById("frame1").src = "data:image/jpg;base64," + data.frame1;
+            document.getElementById("frame2").src = "data:image/jpg;base64," + data.frame2;
+        };
+    </script>
+</body>
+</html>

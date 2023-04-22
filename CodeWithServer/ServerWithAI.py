@@ -148,8 +148,8 @@ def calculation():
 
         frame1 = draw_grid_on_image(frame1, grid)
 
-        # Chong hinh
-        cv2.addWeighted(image_heat, alpha, frame1, 1 - alpha, 0, frame1)
+        # # Chong hinh
+        # cv2.addWeighted(image_heat, alpha, frame1, 1 - alpha, 0, frame1)
 
         cv2.imshow("Detection", frame1)
         # thoát nếu nhấn phím 'q'
@@ -170,29 +170,37 @@ t2 = threading.Thread(target=calculation)
 t2.start()
 
 
-async def video_feed(websocket):
+async def server(websocket):
     global frame
     global image_heat
     global num_people
-    while cap.isOpened():
-        # Encode the frames as JPEG images and add them to the dictionary
-        frame_dict = {
-            "frame1": base64.b64encode(cv2.imencode('.jpg', frame)[1]).decode('utf-8'),
-            "frame2": base64.b64encode(cv2.imencode('.jpg', image_heat)[1]).decode('utf-8')
-        }
+    async for message in websocket:
+        # Nếu client yêu cầu đường dẫn /get_info, gửi tệp tin "test.txt" cho client
+        if message == "get_info":
+            with open("detections.txt", "r") as f:
+                content = f.read()
+                await websocket.send(content)
+        else:
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
 
-        num_dict = {"Number of peole": num_people}
+            time_dict = {"Time": current_time}
 
-        # Combine the two dictionaries
-        data_dict = {**frame_dict, **num_dict}
+            frame_dict = {
+                "frame1": base64.b64encode(cv2.imencode('.jpg', frame)[1]).decode('utf-8'),
+                "frame2": base64.b64encode(cv2.imencode('.jpg', image_heat)[1]).decode('utf-8')
+            }
 
-        # Send the dictionary to the client
-        await websocket.send(json.dumps(data_dict))
+            num_dict = {"Number of peole": num_people}
+
+            data_dict = {**frame_dict, **num_dict, **time_dict}
+
+            # Gửi dictionary đến client
+            await websocket.send(json.dumps(data_dict))
 
     cap.release()
 
 
 print("Turn on server")
-start_server = websockets.serve(video_feed, "localhost", 8765)
+start_server = websockets.serve(server, "localhost", 8765)
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
