@@ -74,6 +74,12 @@ def draw_prediction(img, class_id, x, y, x_plus_w, y_plus_h):
     cv2.rectangle(img, (x, y), (x_plus_w, y_plus_h), color, 2)
     cv2.putText(img, label, (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
+def draw(img, class_id, x, y, x_plus_w, y_plus_h):
+    label = str(classes[class_id])
+    color = COLORS[class_id]
+    cv2.rectangle(img, (x, y), (x_plus_w, y_plus_h), color, 2)
+    cv2.putText(img, label, (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
 
 def save_detections(num_people):
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
@@ -82,17 +88,32 @@ def save_detections(num_people):
     with open('detections.txt', 'a') as f:
         f.write(f'Time: {current_time}, Num people: {num_people}\n')
 
-
+boxes1 = []
 def get_record():
     global frame
+    global num_people
+    global boxes1
     while True:
         ret, frame = cap.read()
+        for i in range(num_people):
+            box = boxes1[i]
+            x = box[0]
+            y = box[1]
+            w = box[2]
+            h = box[3]
+            draw(frame, 0, round(x), round(y), round(x + w), round(y + h))
+        cv2.putText(frame, f"Number of people: {num_people}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        cv2.imshow("Detection", frame)
+        # thoát nếu nhấn phím 'q'
+        if cv2.waitKey(1) == ord('q'):
+            break
 
 
 def calculation():
     global frame
     global image_heat
     global num_people
+    global boxes1
     cv2.waitKey(1000)
     grid = create_grid(frame_width, frame_height)
     while True:
@@ -121,6 +142,7 @@ def calculation():
         # vẽ bounding box và ghi nhãn con người nhận diện được
         indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
         num_people = len(indices)
+        boxes1=boxes
         # Ve cac khung chu nhat quanh doi tuong
         for i in indices:
             box = boxes[i]
@@ -148,10 +170,10 @@ def calculation():
 
         image_heat = draw_grid_on_image(image_heat, grid)
 
-        # # Chong hinh
+        # Chong hinh
         # cv2.addWeighted(image_heat, alpha, frame1, 1 - alpha, 0, frame1)
-
-        cv2.imshow("Detection", frame1)
+        #
+        # cv2.imshow("Detection", frame1)
         # thoát nếu nhấn phím 'q'
         if cv2.waitKey(1) == ord('q'):
             break
