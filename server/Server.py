@@ -19,7 +19,7 @@ num_track = 0
 heatmap = True
 
 
-def run_yolov7_on_webcam():
+def run_yolov7_on_server():
     global frame
     global heatmap
     global show_frame
@@ -47,7 +47,7 @@ def run_yolov7_on_webcam():
     yolov7.unload()
 
 
-t1 = threading.Thread(target=run_yolov7_on_webcam)
+t1 = threading.Thread(target=run_yolov7_on_server)
 t1.start()
 
 
