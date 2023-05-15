@@ -23,7 +23,9 @@ def get_val():
     global frame_width, frame_height, n_cols, n_rows
     print(frame_width)
     print(frame_height)
-    
+
+
+
 def create_grid():
     grid = np.zeros((frame_height, frame_width, 3), dtype=np.uint8)
     color = (255, 255, 255)
@@ -37,6 +39,12 @@ def create_grid():
         end_point = ((i + 1) * cell_size, frame_height)
         grid = cv2.line(grid, start_point, end_point, color, thickness)
     return grid
+
+
+def reset_heatmatrix():
+    global heat_matrix
+    heat_matrix = np.zeros((n_rows, n_cols))
+
 
 def draw_grid_on_image(image, grid):
     image = cv2.addWeighted(image, 1, grid, 0.5, 0)
