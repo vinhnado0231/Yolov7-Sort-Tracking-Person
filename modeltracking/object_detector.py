@@ -40,6 +40,41 @@ class YOLOv7:
 
     def unload(self):
         if self.device.type != 'cpu':
-            #check ok
             torch.cuda.empty_cache()
 
+
+    def __parse_image(self, img):
+        im0 = img
+        img = letterbox(im0, self.imgsz, auto=self.imgsz != 1280)[0]
+        img = img[:, :, ::-1].transpose(2, 0, 1)
+        img = np.ascontiguousarray(img)
+        img = torch.from_numpy(img).to(self.device)
+        img = img.half() if self.device.type != 'cpu' else img.float()
+        img /= 255.0
+
+        if img.ndimension() == 3:
+            img = img.unsqueeze(0)
+
+        return im0, img
+
+    def detect(self, img, track=False, heatmap=False):
+        num_track = 0
+        with torch.no_grad():
+            im0, img = self.__parse_image(img)
+            pred = self.model(img)[0]
+            pred = non_max_suppression(pred, self.settings['conf_thres'], self.settings['iou_thres'])
+            raw_detection = np.empty((0, 6), float)
+
+            for det in pred:
+                if len(det) > 0:
+                    det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
+                    for *xyxy, conf, cls in reversed(det):
+                        raw_detection = np.concatenate((raw_detection, [
+                            [int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3]), round(float(conf), 2), int(cls)]]))
+
+            if track:
+                raw_detection = self.tracker.update(raw_detection)
+                num_track = self.tracker.numTrackedObjects()
+
+            detections = Detections(raw_detection, self.classes, tracking=track).to_dict()
+            return detections, num_track
