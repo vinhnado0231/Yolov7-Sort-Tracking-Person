@@ -38,6 +38,24 @@ def run_yolov7_on_webcam():
 t1 = threading.Thread(target=run_yolov7_on_webcam)
 t1.start()
 
+async def handle_send_frame(websocket):
+    global frame
+    global is_active
+    update = False
+    while True:
+        # Receive a frame from the server
+        data = await websocket.recv()
+
+        # Convert the JPEG-encoded image to a NumPy array
+        frame = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+        if not update:
+            update = True
+            height, width = frame.shape[:2]
+            update_value(height, width)
+        is_active = True
+        # cv2.imshow("Detection", frame)
+        cv2.waitKey(1)
+
 async def server(websocket, path):
     try:
         if path == "/get_frame":
