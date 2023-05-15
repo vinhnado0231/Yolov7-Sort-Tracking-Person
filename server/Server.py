@@ -56,6 +56,26 @@ async def handle_send_frame(websocket):
         # cv2.imshow("Detection", frame)
         cv2.waitKey(1)
 
+
+async def handle_get_frame(websocket):
+    global show_frame
+    global num_track
+
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
+
+    time_dict = {"Time": current_time}
+
+    frame_dict = {
+        "frame": base64.b64encode(cv2.imencode('.jpg', show_frame)[1]).decode('utf-8'),
+    }
+
+    num_dict = {"Number of people": num_track}
+
+    data_dict = {**frame_dict, **num_dict, **time_dict}
+
+    # Gửi dictionary đến client
+    await websocket.send(json.dumps(data_dict))
+
 async def server(websocket, path):
     try:
         if path == "/get_frame":
