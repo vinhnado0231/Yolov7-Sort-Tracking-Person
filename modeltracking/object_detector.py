@@ -24,7 +24,7 @@ class YOLOv7:
             'img_size': img_size,
         }
         self.tracker = Sort()
-        
+
     def load(self, weights_path, classes, device='cpu'):
         with torch.no_grad():
             self.device = select_device(device)
@@ -40,5 +40,6 @@ class YOLOv7:
 
     def unload(self):
         if self.device.type != 'cpu':
+            #check ok
             torch.cuda.empty_cache()
 
