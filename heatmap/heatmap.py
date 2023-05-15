@@ -11,6 +11,13 @@ n_rows = frame_height // cell_size
 
 heat_matrix = np.zeros((n_rows, n_cols))
 
+def update_value(height,width):
+    global frame_width, frame_height, n_cols, n_rows,heat_matrix
+    frame_width = width
+    frame_height = height
+    n_cols = frame_width // cell_size
+    n_rows = frame_height // cell_size
+    heat_matrix = np.zeros((n_rows, n_cols))
 
 def create_grid():
     grid = np.zeros((frame_height, frame_width, 3), dtype=np.uint8)
