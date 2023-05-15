@@ -7,6 +7,18 @@ import threading
 import cv2
 import numpy as np
 import websockets
+
+from heatmap.heatmap import create_grid, draw_heatmap, update_value, get_val
+from modeltracking.object_detector import YOLOv7
+from utils.detections import draw
+
+frame = 0
+is_active = False
+show_frame = 0
+num_track = 0
+heatmap = True
+
+
 def run_yolov7_on_webcam():
     global frame
     global heatmap
@@ -37,6 +49,7 @@ def run_yolov7_on_webcam():
 
 t1 = threading.Thread(target=run_yolov7_on_webcam)
 t1.start()
+
 
 async def handle_send_frame(websocket):
     global frame
@@ -75,6 +88,7 @@ async def handle_get_frame(websocket):
 
     # Gửi dictionary đến client
     await websocket.send(json.dumps(data_dict))
+
 
 async def server(websocket, path):
     try:
