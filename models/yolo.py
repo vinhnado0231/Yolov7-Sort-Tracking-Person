@@ -10,7 +10,6 @@ from utils.torch_utils import fuse_conv_and_bn, scale_img, initialize_weights
 
 
 class Detect(nn.Module):
-    # YOLOv5 Detect head for detection models
     stride = None  # strides computed during build
     dynamic = False  # force grid reconstruction
     export = False  # export mode
@@ -64,7 +63,6 @@ class Detect(nn.Module):
 
 
 class Segment(Detect):
-    # YOLOv5 Segment head for segmentation models
     def __init__(self, nc=80, anchors=(), nm=32, npr=256, ch=(), inplace=True):
         super().__init__(nc, anchors, ch, inplace)
         self.nm = nm  # number of masks
