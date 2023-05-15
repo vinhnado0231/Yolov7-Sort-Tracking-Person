@@ -7,7 +7,36 @@ import threading
 import cv2
 import numpy as np
 import websockets
+def run_yolov7_on_webcam():
+    global frame
+    global heatmap
+    global show_frame
+    global num_track
+    global is_active
 
+    yolov7 = YOLOv7()
+    yolov7.load('../yolov7.pt', classes='../coco.yaml', device='gpu')  # use 'gpu' for CUDA GPU inference
+
+    while True:
+        active = is_active
+        if active:
+            grid = create_grid()
+            get_val()
+        while active:
+            detections, num_track = yolov7.detect(frame, track=True, heatmap=True if heatmap else False)
+            detected_frame = draw(frame, detections)
+            if heatmap:
+                detected_frame = draw_heatmap(detected_frame, grid)
+            show_frame = detected_frame
+            # print(json.dumps(detections, indent=4))
+
+            cv2.imshow('webcam', detected_frame)
+            cv2.waitKey(1)
+    yolov7.unload()
+
+
+t1 = threading.Thread(target=run_yolov7_on_webcam)
+t1.start()
 
 async def server(websocket, path):
     try:
