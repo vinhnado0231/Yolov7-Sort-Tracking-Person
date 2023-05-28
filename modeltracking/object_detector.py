@@ -14,6 +14,8 @@ from utils.datasets import letterbox
 import numpy as np
 import torch
 import yaml
+import firebase_admin
+from firebase_admin import credentials, db
 
 
 class YOLOv7:
@@ -84,9 +86,21 @@ class YOLOv7:
             return detections, num_track
 
 
+cred = credentials.Certificate("D:\\HK6\\PBL5\\BE\\Yolov7-Sort-Tracking-Person\\server\\realtime-crud-e8421-firebase-adminsdk-9apax-68114c1d64.json")
+firebase_admin.initialize_app(
+    cred, {"databaseURL": "https://realtime-crud-e8421-default-rtdb.asia-southeast1.firebasedatabase.app/"})
+
 def save_detections(num_track):
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
-    print("vào")
+    current_time = current_time.split(" ")
+    date = current_time[0].split("-")[0] + current_time[0].split("-")[1] + current_time[0].split("-")[2]
+    hour = current_time[1].split(":")[0] + current_time[1].split(":")[1]
+    hour = hour + current_time[1].split(":")[2].split(".")[0]
+    time = date + hour
+
     # Ghi các giá trị của các khung và thời gian vào file
     with open('detections.txt', 'a') as f:
         f.write(f'Time: {current_time}, Num people: {num_track}\n')
+        ref = db.reference("/time/" + time)
+        ref.set(num_track)
+
