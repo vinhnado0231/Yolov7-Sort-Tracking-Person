@@ -1,6 +1,5 @@
 import asyncio
 import base64
-import datetime
 import json
 import threading
 import time
@@ -9,12 +8,13 @@ import cv2
 import numpy as np
 import websockets
 
+from firebase.firebase import get_heatmap
 from heatmap.heatmap import create_grid, draw_heatmap, update_value, get_val
 from modeltracking.object_detector import YOLOv7
 from utils.detections import draw
 
 yolov7 = YOLOv7()
-yolov7.load('../best.pt', classes='../mydataset.yaml', device='gpu')  # use 'gpu' for CUDA GPU inference
+yolov7.load('../best_416.pt', classes='../mydataset.yaml', device='gpu')  # use 'gpu' for CUDA GPU inference
 
 frame = 0
 detections = 0
@@ -23,24 +23,36 @@ show_frame = 0
 num_track = 0
 heatmap = True
 
+
 def resolve_frame():
     global frame
     global detections
     global show_frame
-    global  is_active
+    global is_active
+    global heatmap
     while True:
         active = is_active
         if active:
-            time.sleep(1)
+            time.sleep(0.5)
             grid = create_grid()
             get_val()
         while active:
             detected_frame = draw(frame, detections)
-            if heatmap:
+            heatmap_copy = heatmap
+            if heatmap_copy:
                 detected_frame = draw_heatmap(detected_frame, grid)
             show_frame = detected_frame
             cv2.imshow('webcam', detected_frame)
             cv2.waitKey(1)
+
+
+def update_heatmap():
+    global heatmap
+    while True:
+        heatmap_copy = heatmap
+        heatmap = get_heatmap(heatmap_copy)
+        time.sleep(1)
+
 
 def run_yolov7_on_server():
     global frame
@@ -53,17 +65,18 @@ def run_yolov7_on_server():
         active = is_active
         check = True
         while active:
-            detections, num_track = yolov7.detect(frame, track=True, heatmap=True if heatmap else False)
+            active_heatmap = heatmap
+            detections, num_track = yolov7.detect(frame, track=True, heatmap=True if active_heatmap else False)
             if check:
                 check = False
-                t2 = threading.Thread(target=resolve_frame)
-                t2.start()
+                threading.Thread(target=resolve_frame).start()
+                threading.Thread(target=update_heatmap).start()
 
     yolov7.unload()
 
 
-t1 = threading.Thread(target=run_yolov7_on_server)
-t1.start()
+threading.Thread(target=run_yolov7_on_server).start()
+
 
 async def handle_send_frame(websocket):
     global frame
@@ -81,13 +94,7 @@ async def handle_send_frame(websocket):
             update_value(height, width)
         is_active = True
 
-async def handle_control(websocket):
-    check = True
-    while True:
 
-        if check:
-            check=False
-            await websocket.send("Turn left")
 
 async def handle_get_frame(websocket):
     global show_frame
@@ -95,9 +102,6 @@ async def handle_get_frame(websocket):
     while True:
         show_frame = show_frame
         num_track = num_track
-        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
-
-        time_dict = {"Time": current_time}
 
         frame_dict = {
             "frame": base64.b64encode(cv2.imencode('.jpg', show_frame)[1]).decode('utf-8'),
@@ -105,25 +109,45 @@ async def handle_get_frame(websocket):
 
         num_dict = {"Number of people": num_track}
 
-        data_dict = {**frame_dict, **num_dict, **time_dict}
+        data_dict = {**frame_dict, **num_dict}
 
         # Gửi dictionary đến client
         await websocket.send(json.dumps(data_dict))
 
 
-async def server(websocket, path):
+async def path1(websocket, path):
     try:
-        if path == "/get_frame":
-            await handle_get_frame(websocket)
-        elif path == "/control":
-            await handle_control(websocket)
-        elif path == "/send_frame":
+        if path == "/send_frame":
             await handle_send_frame(websocket)
     except Exception as e:
         print(f"Error occurred: {e}")
 
 
+async def path2(websocket, path):
+    try:
+        if path == "/get_frame":
+            await handle_get_frame(websocket)
+    except Exception as e:
+        print(f"Error occurred: {e}")
+
+
 print("Turn on server")
-start_server = websockets.serve(server, "127.0.0.1", 9000, ping_interval=None)
-asyncio.get_event_loop().run_until_complete(start_server)
-asyncio.get_event_loop().run_forever()
+
+
+def websocket1():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    start_server = websockets.serve(path1, "127.0.0.1", 9000, ping_interval=None)
+    loop.run_until_complete(start_server)
+    loop.run_forever()
+
+
+def websocket2():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    start_server = websockets.serve(path2, "127.0.0.1", 9001, ping_interval=None)
+    loop.run_until_complete(start_server)
+    loop.run_forever()
+
+threading.Thread(target=websocket1).start()
+threading.Thread(target=websocket2).start()

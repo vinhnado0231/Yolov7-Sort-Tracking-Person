@@ -11,19 +11,20 @@ n_rows = frame_height // cell_size
 
 heat_matrix = np.zeros((n_rows, n_cols))
 
-def update_value(height,width):
-    global frame_width, frame_height, n_cols, n_rows,heat_matrix
+
+def update_value(height, width):
+    global frame_width, frame_height, n_cols, n_rows, heat_matrix
     frame_width = width
     frame_height = height
     n_cols = frame_width // cell_size
     n_rows = frame_height // cell_size
     heat_matrix = np.zeros((n_rows, n_cols))
 
+
 def get_val():
     global frame_width, frame_height, n_cols, n_rows
     print(frame_width)
     print(frame_height)
-
 
 
 def create_grid():
@@ -51,15 +52,13 @@ def draw_grid_on_image(image, grid):
     return image
 
 
-def calc_heatmap(detection):
-    x, y, x_plus_w, y_plus_h = detection[0], detection[1], detection[2], detection[3]
-    try:
-        heat_matrix[int((y_plus_h + y) // 2 // cell_size), int((x_plus_w + x) // 2 // cell_size)] += 1
-    except:
-        pass
-
-
-
+def calc_heatmap(raw_detection):
+    for detection in raw_detection:
+        x, y, x_plus_w, y_plus_h = detection[0], detection[1], detection[2], detection[3]
+        try:
+            heat_matrix[int((y_plus_h + y) // 2 // cell_size), int((x_plus_w + x) // 2 // cell_size)] += 1
+        except:
+            pass
 
 def draw_heatmap(frame, grid):
     global heat_matrix
